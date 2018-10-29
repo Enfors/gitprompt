@@ -4,6 +4,9 @@
 
 This project is complete in the sense that it works.
 
+A brief article about it has been published in Hacker Noon:
+https://hackernoon.com/why-linux-developers-should-use-gitprompt-8d654e5b87e1
+
 ## Installation
 
 To install gitprompt, first `cd` to a suitable directory where you want to
