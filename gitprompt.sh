@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export GITPROMPT_VERSION="1.1.0"
+
 RED="\033[0;31m"
 GREEN="\033[0;32m"
 YELLOW="\033[0;33m"
@@ -15,6 +17,15 @@ function ExitStatus
 
     if [ $gs_exitstatus -ne 0 ]; then
 	echo -en "${RED}Exit status: $gs_exitstatus $RESET"
+    fi
+}
+
+function SetHostAlias
+{
+    if [ -n "$HOSTALIAS" ]; then
+	hostalias="$BLUE[$RESET$HOSTALIAS$BLUE]$RESET"
+    else
+	hostalias=""
     fi
 }
 
@@ -110,5 +121,7 @@ function GitStatus
     fi
 }
 
-export PS1="\$(ExitStatus)$BLUE[$RESET\$(date +%H:%M)$BLUE]$RESET $GREEN\u$RESET @ $GREEN\h$RESET: $YELLOW\w$RESET \$(GitStatus)\n\$ "
+SetHostAlias
+
+export PS1="\$(ExitStatus)$BLUE[$RESET\$(date +%H:%M)$BLUE]$RESET $GREEN\u$RESET @ $GREEN\h$RESET$hostalias: $YELLOW\w$RESET \$(GitStatus)\n\$ "
 
