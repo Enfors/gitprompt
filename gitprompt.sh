@@ -1,6 +1,7 @@
 #!/bin/bash
+# gitprompt.sh by Christer Enfors -- http://github.com/enfors/gitprompt
 
-export GITPROMPT_VERSION="1.1.0"
+GITPROMPT_VERSION="1.1.0"
 
 RED="\033[0;31m"
 GREEN="\033[0;32m"
