@@ -59,3 +59,8 @@ If you have a lot of different machines with less-than-helpful
 hostnames, which is sometimes the case, then you can set a shell
 variable called `HOSTALIAS`, to a more descriptive name, and it too
 will be displayed in the prompt.
+
+### Customizing the colors
+
+You can customize the colors used with the `GPConfig` command. If things
+go wrong, you can reset the config with `GPReset`.
