@@ -10,6 +10,26 @@ BLUE="\033[0;34m"
 MAGENTA="\033[0;35m"
 CYAN="\033[0;36m"
 RESET="\033[0m"
+WHITE=$RESET
+BLACK=$RESET
+
+GIT_EXIT_STATUS_COLOR=$RED
+GIT_TIME_COLOR=$RESET
+GIT_BRACKET_COLOR=$BLUE
+GIT_AT_COLOR=$RESET
+GIT_USERNAME_COLOR=$GREEN
+GIT_HOSTNAME_COLOR=$GREEN
+GIT_HOSTALIAS_COLOR=$RESET
+GIT_COLON_COLOR=$RESET
+GIT_PWD_COLOR=$YELLOW
+
+GIT_ADDED_COLOR=$YELLOW
+GIT_UNTRACKED_COLOR=$CYAN
+GIT_MODIFIED_COLOR=$BLUE
+GIT_DELETED_COLOR=$RED
+GIT_RENAMED_COLOR=$MAGENTA
+GIT_COPIED_COLOR=$MAGENTA
+GIT_UNMERGED_COLOR=$MAGENTA
 
 # Display the exit status of the previous command, if non-zero.
 function ExitStatus
@@ -17,14 +37,14 @@ function ExitStatus
     gs_exitstatus=$?
 
     if [ $gs_exitstatus -ne 0 ]; then
-	echo -en "${RED}Exit status: $gs_exitstatus $RESET"
+	echo -en "${GIT_EXIT_STATUS}Exit status: $gs_exitstatus $RESET"
     fi
 }
 
 function SetHostAlias
 {
     if [ -n "$HOSTALIAS" ]; then
-	hostalias="$BLUE[$RESET$HOSTALIAS$BLUE]$RESET"
+	hostalias="$GIT_BRACKET_COLOR[$RESET$HOSTALIAS$GIT_BRACKET_COLOR]$RESET"
     else
 	hostalias=""
     fi
@@ -51,42 +71,42 @@ function CommitStatus
 	    if [ -z "$added" ]; then
 		added=1
 		MaybeEchoComma
-		echo -en "${YELLOW}Added${RESET}"
+		echo -en "${GIT_ADDED_COLOR}Added${RESET}"
 	    fi
 	elif [[ $line == \?\?* ]]; then
 	    if [ -z "$untracked" ]; then
 		untracked=1
 		MaybeEchoComma
-		echo -en "${CYAN}Untracked${RESET}"
+		echo -en "${GIT_UNTRACKED_COLOR}Untracked${RESET}"
 	    fi
 	elif [[ $line == M* ]]; then
 	    if [ -z "$modified" ]; then
 		modified=1
 		MaybeEchoComma
-		echo -en "${BLUE}Modified${RESET}"
+		echo -en "${GIT_MODIFIED_COLOR}Modified${RESET}"
 	    fi
 	elif [[ $line == D* ]]; then
 	    if [ -z "$deleted" ]; then
 		deleted=1
 		MaybeEchoComma
-		echo -en "${RED}Deleted${RESET}"
+		echo -en "${GIT_DELETED_COLOR}Deleted${RESET}"
 	    fi
 	elif [[ $line == R* ]]; then
 	    if [ -z "$renamed" ]; then
 		renamed=1
 		MaybeEchoComma
-		echo -en "${MAGENTA}Renamed${RESET}"
+		echo -en "${GIT_RENAMED_COLOR}Renamed${RESET}"
 	    fi
 	elif [[ $line == C* ]]; then
 	    if [ -z "$copied" ]; then
 		copied=1
-		echo -en ", ${MAGENTA}Copied${RESET}"
+		echo -en ", ${GIT_COPIED_COLOR}Copied${RESET}"
 	    fi
 	elif [[ $line == U* ]]; then
 	    if [ -z "$unmerged" ]; then
 		copied=1
 		MaybeEchoComma
-		echo -en "${MAGENTA}Updated-but-unmerged${RESET}"
+		echo -en "${GIT_UNMERGED_COLOR}Updated-but-unmerged${RESET}"
 	    fi
 	else
 	    echo "UNKNOWN STATUS"
@@ -114,9 +134,9 @@ function GitStatus
 
 	if [ $? -eq 0 ]; then
 	    if [ -z "$gs_gitstatus" ]; then
-		echo -e "$BLUE[$RESET$gs_branch$BLUE]$RESET: ${GREEN}Up-to-date${RESET}"
+		echo -e "$GIT_BRACKET_COLOR[$RESET$gs_branch$GIT_BRACKET_COLOR]$RESET: ${GREEN}Up-to-date${RESET}"
 	    else
-		echo -e "$BLUE[$RESET$gs_branch$BLUE]$RESET: $gs_gitstatus"
+		echo -e "$GIT_BRACKET_COLOR[$RESET$gs_branch$GIT_BRACKET_COLOR]$RESET: $gs_gitstatus"
 	    fi
 	fi
     fi
@@ -124,5 +144,5 @@ function GitStatus
 
 SetHostAlias
 
-export PS1="\$(ExitStatus)$BLUE[$RESET\$(date +%H:%M)$BLUE]$RESET $GREEN\u$RESET @ $GREEN\h$RESET$hostalias: $YELLOW\w$RESET \$(GitStatus)\n\$ "
+export PS1="\$(ExitStatus)$GIT_BRACKET_COLOR[$RESET\$(date +%H:%M)$GIT_BRACKET_COLOR]$RESET $GIT_USERNAME_COLOR\u$GIT_AT_COLOR @ $GIT_HOSTNAME_COLOR\h$RESET$hostalias: $GIT_PWD_COLOR\w$RESET \$(GitStatus)\n\$ "
 
