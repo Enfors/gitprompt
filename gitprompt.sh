@@ -182,7 +182,7 @@ function ExitStatus
     gs_exitstatus=$?
 
     if [ $gs_exitstatus -ne 0 ]; then
-	echo -en "${GIT_EXIT_STATUS}Exit status: $gs_exitstatus $RESET"
+	echo -en "${GIT_EXIT_STATUS_COLOR}Exit status: $gs_exitstatus $RESET"
     fi
 }
 
