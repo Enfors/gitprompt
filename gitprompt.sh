@@ -1,7 +1,7 @@
 #!/bin/bash
 # gitprompt.sh by Christer Enfors -- http://github.com/enfors/gitprompt
 
-GITPROMPT_VERSION="1.2.0"
+GITPROMPT_VERSION="1.2.1"
 RC_FILE=~/.gitpromptrc
 
 RED="\033[0;31m"
