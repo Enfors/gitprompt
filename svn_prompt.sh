@@ -33,6 +33,9 @@ CLI_RENAMED_COLOR=$MAGENTA
 CLI_COPIED_COLOR=$MAGENTA
 CLI_UNMERGED_COLOR=$MAGENTA
 
+
+svn_first=""
+
 #
 # INIT FUNCTIONS
 #
@@ -80,7 +83,7 @@ function SPHelp
 SvnPrompt help
 ==============
 SvnPrompt is a script which configures your prompt to be a little more
-helpful; see https://www.svnhub.com/craigtmoore/SvnPrompt for details about
+helpful; see https://www.github.com/craigtmoore/GitPrompt for details about
 what it does.
 
 SvnPrompt commands
@@ -198,12 +201,12 @@ function SetPrompt
   export PS1="\n\$(ExitStatus)$CLI_TIME_COLOR\$(date +%H:%M)$RESET $CLI_USERNAME_COLOR\u$CLI_AT_COLOR@$CLI_HOSTNAME_COLOR\h$RESET$hostalias $CLI_PWD_COLOR\w$RESET \$(svnStatus)\n\$ "
 }
 
-# This is called before printing the each word in a list. The words should be
+# This is called before printing each word in a list. The words should be
 # comma separated, so it prints a comma unless the word it's supposed to print
 # next is the FIRST word.
 function MaybeEchoComma
 {
-  if [[ ! -z "${svn_first}" ]]; then
+  if [[ -n "${svn_first}" ]]; then
     svn_first=""
   else
     echo -n ", "
@@ -221,6 +224,8 @@ function CommitStatus
   local copied
   local unmerged
   local missing
+  local out_of_date
+  local check_if_up_to_date
   svn status | while read -r line; do
     if [[ ${line} =~ ^A ]]; then
       if [[ -z "${added}" ]]; then
@@ -255,24 +260,49 @@ function CommitStatus
     elif [[ ${line} =~ ^C ]]; then
       if [[ -z "${copied}" ]]; then
         copied=1
-        echo -en ", ${CLI_COPIED_COLOR}Copied${RESET}"
+        MaybeEchoComma
+        echo -en "${CLI_COPIED_COLOR}Copied${RESET}"
       fi
     elif [[ ${line} =~ ^! ]]; then
       if [[ -z "${missing}" ]]; then
-        copied=1
+        missing=1
         MaybeEchoComma
         echo -en "${CLI_UNMERGED_COLOR}Missing${RESET}"
       fi
     fi
+    if [[ -z "${check_if_up_to_date}" ]]; then
+      echo "check_if_up_to_date = ${check_if_up_to_date}"
+      check_if_up_to_date=1
+      svn status -u | sed '$d' | while read -r status_line; do
+        if [[ ${status_line} =~ \* ]]; then
+          if [[ -z "${out_of_date}" ]]; then
+            out_of_date=1
+            MaybeEchoComma
+            echo -en "${CLI_UNMERGED_COLOR}OutOfDate${RESET}"
+          fi
+        fi;
+      done;
+    fi;
   done
+  if [[ -z "${check_if_up_to_date}" ]]; then
+    check_if_up_to_date=1
+    svn status -u | sed '$d' | while read -r status_line; do
+      if [[ ${status_line} =~ \* ]]; then
+        if [[ -z "${out_of_date}" ]]; then
+          out_of_date=1
+          MaybeEchoComma
+          echo -en "${CLI_UNMERGED_COLOR}OutOfDate${RESET}"
+        fi
+      fi;
+    done;
+  fi;
 
   return 0
 }
 
 function svnStatus
 {
-
-  svn_first=1
+  svn_first="yes"
 
   # If we're inside a .svn directory, we can't find the branch / commit status.
   if pwd | grep -q /.svn; then
