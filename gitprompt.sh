@@ -203,21 +203,20 @@ function SetPrompt
   export PS1="\n\$(ExitStatus)$GIT_TIME_COLOR\$(date +%H:%M)$RESET $GIT_USERNAME_COLOR\u$GIT_AT_COLOR@$GIT_HOSTNAME_COLOR\h$RESET$hostalias $GIT_PWD_COLOR\w$RESET \$(GetStatus)\n\$ "
 }
 
-# This is called before printing the each word in a list. The words should be
-# comma separated, so it prints a comma unless the word it's supposed to print
-# next is the FIRST word.
-function MaybeEchoComma
-{
-  if [ ! -z "$gs_first" ]; then
-    gs_first=
+function MakeStatus {
+  oldStatus="$1"
+  newStatus="$2"
+  if [[ -z "${oldStatus}" ]]; then
+    echo "${newStatus}"
   else
-    echo -n ", "
+    echo "${oldStatus}, ${newStatus}"
   fi
 }
 
 # Show the git commit status.
 function GitCommitStatus
 {
+  status=""
   local added
   local untracked
   local modified
@@ -226,60 +225,57 @@ function GitCommitStatus
   local copied
   local unmerged
   local missing
-  git status -s --porcelain | while read -r line; do
+  while read -r line; do
     if [[ $line == A* ]]; then
       if [[ -z "$added" ]]; then
         added=1
-        MaybeEchoComma
-        echo -en "${GIT_ADDED_COLOR}Added${RESET}"
+        status="$(MakeStatus "${status}" "${GIT_ADDED_COLOR}Added${RESET}")"
       fi
     elif [[ $line == \?\?* ]]; then
       if [[ -z "$untracked" ]]; then
         untracked=1
-        MaybeEchoComma
-        echo -en "${GIT_UNTRACKED_COLOR}Untracked${RESET}"
+        status="$(MakeStatus "${status}" "${GIT_UNTRACKED_COLOR}Untracked${RESET}")"
       fi
     elif [[ $line == M* ]]; then
       if [[ -z "$modified" ]]; then
         modified=1
-        MaybeEchoComma
-        echo -en "${GIT_MODIFIED_COLOR}Modified${RESET}"
+        status="$(MakeStatus "${status}" "${GIT_MODIFIED_COLOR}Modified${RESET}")"
       fi
     elif [[ $line == D* ]]; then
       if [[ -z "$deleted" ]]; then
         deleted=1
-        MaybeEchoComma
-        echo -en "${GIT_DELETED_COLOR}Deleted${RESET}"
+        status="$(MakeStatus "${status}" "${GIT_DELETED_COLOR}Deleted${RESET}")"
       fi
     elif [[ $line == R* ]]; then
       if [[ -z "$renamed" ]]; then
         renamed=1
-        MaybeEchoComma
-        echo -en "${GIT_RENAMED_COLOR}Renamed${RESET}"
+        status="$(MakeStatus "${status}" "${GIT_RENAMED_COLOR}Renamed${RESET}")"
       fi
     elif [[ $line == C* ]]; then
       if [[ -z "$copied" ]]; then
         copied=1
-        echo -en ", ${GIT_COPIED_COLOR}Copied${RESET}"
+        status="$(MakeStatus "${status}" ", ${GIT_COPIED_COLOR}Copied${RESET}")"
       fi
     elif [[ $line == U* ]]; then
       if [[ -z "$unmerged" ]]; then
         copied=1
-        MaybeEchoComma
-        echo -en "${GIT_UNMERGED_COLOR}Updated-but-unmerged${RESET}"
+        status="$(MakeStatus "${status}" "${GIT_UNMERGED_COLOR}Updated-but-unmerged${RESET}")"
       fi
     else
-      echo "UNKNOWN STATUS"
+      status="UNKNOWN STATUS"
       return 1
     fi
-  done
-
+  done <<< $( git status -s --porcelain )
+  if [[ -n "${status}" ]]; then
+    echo -en "${status}"
+  fi
   return 0
 }
 
 # Show the svn commit status.
 function SvnCommitStatus
 {
+  status=""
   local added
   local untracked
   local modified
@@ -289,85 +285,64 @@ function SvnCommitStatus
   local unmerged
   local missing
   local out_of_date
-  check_if_up_to_date=""
-  svn status | while read -r line; do
+  while read -r line; do
     if [[ ${line} =~ ^A ]]; then
       if [[ -z "${added}" ]]; then
         added=1
-        MaybeEchoComma
-        echo -en "${GIT_ADDED_COLOR}Added${RESET}"
+        status="$(MakeStatus "${status}" "${GIT_ADDED_COLOR}Added${RESET}")"
       fi
     elif [[ ${line} =~ ^\? ]]; then
       if [[ -z "${untracked}" ]]; then
         untracked=1
-        MaybeEchoComma
-        echo -en "${GIT_UNTRACKED_COLOR}Untracked${RESET}"
+        status="$(MakeStatus "${status}" "${GIT_UNTRACKED_COLOR}Untracked${RESET}")"
       fi
     elif [[ ${line} =~ ^M ]]; then
       if [[ -z "${modified}" ]]; then
         modified=1
-        MaybeEchoComma
-        echo -en "${GIT_MODIFIED_COLOR}Modified${RESET}"
+        status="$(MakeStatus "${status}" "${GIT_MODIFIED_COLOR}Modified${RESET}")"
       fi
     elif [[ ${line} =~ ^D ]]; then
       if [[ -z "${deleted}" ]]; then
         deleted=1
-        MaybeEchoComma
-        echo -en "${GIT_DELETED_COLOR}Deleted${RESET}"
+        status="$(MakeStatus "${status}" "${GIT_DELETED_COLOR}Deleted${RESET}")"
       fi
     elif [[ ${line} =~ ^R ]]; then
       if [[ -z "${renamed}" ]]; then
         renamed=1
-        MaybeEchoComma
-        echo -en "${GIT_RENAMED_COLOR}Renamed${RESET}"
+        status="$(MakeStatus "${status}" "${GIT_RENAMED_COLOR}Renamed${RESET}")"
       fi
     elif [[ ${line} =~ ^C ]]; then
       if [[ -z "${copied}" ]]; then
         copied=1
-        MaybeEchoComma
-        echo -en "${GIT_COPIED_COLOR}Copied${RESET}"
+        status="$(MakeStatus "${status}" "${GIT_COPIED_COLOR}Copied${RESET}")"
       fi
     elif [[ ${line} =~ ^! ]]; then
       if [[ -z "${missing}" ]]; then
         missing=1
-        MaybeEchoComma
-        echo -en "${GIT_UNMERGED_COLOR}Missing${RESET}"
+        status="$(MakeStatus "${status}" "${GIT_UNMERGED_COLOR}Missing${RESET}")"
+      fi
+    else
+      status="UNKNOWN STATUS"
+      return 1
+    fi
+  done <<< $( svn status )
+  svn status -u | sed '$d' | while read -r status_line; do
+    if [[ ${status_line} =~ \* ]]; then
+      if [[ -z "${out_of_date}" ]]; then
+        out_of_date=1
+        status="$(MakeStatus "${status}" "${GIT_UNMERGED_COLOR}OutOfDate${RESET}")"
+        echo "${status}"
       fi
     fi
-    if [[ -z "${check_if_up_to_date}" ]]; then
-      check_if_up_to_date=1
-      svn status -u | sed '$d' | while read -r status_line; do
-        if [[ ${status_line} =~ \* ]]; then
-          if [[ -z "${out_of_date}" ]]; then
-            out_of_date=1
-            MaybeEchoComma
-            echo -en "${GIT_UNMERGED_COLOR}OutOfDate${RESET}"
-          fi
-        fi;
-      done;
-    fi;
   done
-  if [[ -z "${check_if_up_to_date}" ]]; then
-    check_if_up_to_date=1
-    svn status -u | sed '$d' | while read -r status_line; do
-      if [[ ${status_line} =~ \* ]]; then
-        if [[ -z "${out_of_date}" ]]; then
-          out_of_date=1
-          MaybeEchoComma
-          echo -en "${GIT_UNMERGED_COLOR}OutOfDate${RESET}"
-        fi
-      fi;
-    done;
+  if [[ -n "${status}" ]]; then
+    echo -en "${status}"
   fi
-
   return 0
 }
 
 function GetStatus
 {
-
-  gs_first=1
-
   # If we're inside a .git directory, we can't find the branch / commit status.
   if pwd | grep -q /.git; then
     return 0
