@@ -401,7 +401,7 @@ function GetStatus
     else
       svn_branch="Unknown"
     fi
-    local svn_status=$(CommitStatus)
+    local svn_status=$(SvnCommitStatus)
     if [[ $? -eq 0 ]]; then
       if [[ -z "${svn_status}" ]]; then
         echo -e "$GIT_BRACKET_COLOR[$GIT_BRANCH_COLOR$svn_branch$GIT_BRACKET_COLOR]$RESET: ${GREEN}Up-to-date${RESET}"
