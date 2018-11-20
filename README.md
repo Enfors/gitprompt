@@ -2,7 +2,7 @@
 
 ## Project status
 
-The current version is 1.2.1.
+The current version is 2.0.0.
 
 A brief article about it has been published in Hacker Noon:
 https://hackernoon.com/why-linux-developers-should-use-gitprompt-8d654e5b87e1
