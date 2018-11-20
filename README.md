@@ -1,4 +1,4 @@
-# gitprompt -- A Bash prompt which integrates git status.
+# gitprompt -- A Bash prompt which integrates git and svn status
 
 ## Project status
 
