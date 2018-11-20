@@ -326,15 +326,14 @@ function SvnCommitStatus
       return 1
     fi
   done <<< $( svn status )
-  svn status -u | sed '$d' | while read -r status_line; do
+  while read -r status_line; do
     if [[ ${status_line} =~ \* ]]; then
       if [[ -z "${out_of_date}" ]]; then
         out_of_date=1
         status="$(MakeStatus "${status}" "${GIT_UNMERGED_COLOR}OutOfDate${RESET}")"
-        echo "${status}"
       fi
     fi
-  done
+  done <<< $( svn status -u | sed '$d' )
   if [[ -n "${status}" ]]; then
     echo -en "${status}"
   fi
