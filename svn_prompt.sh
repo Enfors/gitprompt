@@ -225,7 +225,7 @@ function CommitStatus
   local unmerged
   local missing
   local out_of_date
-  local check_if_up_to_date
+  check_if_up_to_date=""
   svn status | while read -r line; do
     if [[ ${line} =~ ^A ]]; then
       if [[ -z "${added}" ]]; then
@@ -271,7 +271,6 @@ function CommitStatus
       fi
     fi
     if [[ -z "${check_if_up_to_date}" ]]; then
-      echo "check_if_up_to_date = ${check_if_up_to_date}"
       check_if_up_to_date=1
       svn status -u | sed '$d' | while read -r status_line; do
         if [[ ${status_line} =~ \* ]]; then
