@@ -203,7 +203,7 @@ function SetPrompt
   export PS1="\n\$(ExitStatus)$GIT_TIME_COLOR\$(date +%H:%M)$RESET $GIT_USERNAME_COLOR\u$GIT_AT_COLOR@$GIT_HOSTNAME_COLOR\h$RESET$hostalias $GIT_PWD_COLOR\w$RESET \$(GetStatus)\n\$ "
 }
 
-function MakeStatus {
+function UpdateStatus {
   oldStatus="$1"
   newStatus="$2"
   if [[ -z "${oldStatus}" ]]; then
@@ -217,55 +217,39 @@ function MakeStatus {
 function GitCommitStatus
 {
   status=""
-  local added
-  local untracked
-  local modified
-  local deleted
-  local renamed
-  local copied
-  local unmerged
-  local missing
+  local added=""
+  local untracked=""
+  local modified=""
+  local deleted=""
+  local renamed=""
+  local copied=""
+  local unmerged=""
+  local missing=""
+  local unknown=""
   while read -r line; do
-    if [[ $line == A* ]]; then
-      if [[ -z "$added" ]]; then
-        added=1
-        status="$(MakeStatus "${status}" "${GIT_ADDED_COLOR}Added${RESET}")"
-      fi
-    elif [[ $line == \?\?* ]]; then
-      if [[ -z "$untracked" ]]; then
-        untracked=1
-        status="$(MakeStatus "${status}" "${GIT_UNTRACKED_COLOR}Untracked${RESET}")"
-      fi
-    elif [[ $line == M* ]]; then
-      if [[ -z "$modified" ]]; then
-        modified=1
-        status="$(MakeStatus "${status}" "${GIT_MODIFIED_COLOR}Modified${RESET}")"
-      fi
-    elif [[ $line == D* ]]; then
-      if [[ -z "$deleted" ]]; then
-        deleted=1
-        status="$(MakeStatus "${status}" "${GIT_DELETED_COLOR}Deleted${RESET}")"
-      fi
-    elif [[ $line == R* ]]; then
-      if [[ -z "$renamed" ]]; then
-        renamed=1
-        status="$(MakeStatus "${status}" "${GIT_RENAMED_COLOR}Renamed${RESET}")"
-      fi
-    elif [[ $line == C* ]]; then
-      if [[ -z "$copied" ]]; then
-        copied=1
-        status="$(MakeStatus "${status}" ", ${GIT_COPIED_COLOR}Copied${RESET}")"
-      fi
-    elif [[ $line == U* ]]; then
-      if [[ -z "$unmerged" ]]; then
-        copied=1
-        status="$(MakeStatus "${status}" "${GIT_UNMERGED_COLOR}Updated-but-unmerged${RESET}")"
-      fi
-    else
-      status="UNKNOWN STATUS"
-      return 1
+    if [[ ${line} == A* && -z "$added" ]]; then
+      added=1
+      status="$(UpdateStatus "${status}" "${GIT_ADDED_COLOR}Added${RESET}")"
+    elif [[ ${line} == \?\?* && -z "$untracked" ]]; then
+      untracked=1
+      status="$(UpdateStatus "${status}" "${GIT_UNTRACKED_COLOR}Untracked${RESET}")"
+    elif [[ ${line} == M* && -z "$modified" ]]; then
+      modified=1
+      status="$(UpdateStatus "${status}" "${GIT_MODIFIED_COLOR}Modified${RESET}")"
+    elif [[ ${line} == D* && -z "$deleted" ]]; then
+      deleted=1
+      status="$(UpdateStatus "${status}" "${GIT_DELETED_COLOR}Deleted${RESET}")"
+    elif [[ ${line} == R* && -z "$renamed" ]]; then
+      renamed=1
+      status="$(UpdateStatus "${status}" "${GIT_RENAMED_COLOR}Renamed${RESET}")"
+    elif [[ ${line} == C* && -z "$copied" ]]; then
+      copied=1
+      status="$(UpdateStatus "${status}" ", ${GIT_COPIED_COLOR}Copied${RESET}")"
+    elif [[ ${line} == U* && -z "$unmerged" ]]; then
+      copied=1
+      status="$(UpdateStatus "${status}" "${GIT_UNMERGED_COLOR}Updated-but-unmerged${RESET}")"
     fi
-  done <<< $( git status -s --porcelain )
+  done <<< $(git status -s --porcelain)
   if [[ -n "${status}" ]]; then
     echo -en "${status}"
   fi
@@ -276,64 +260,47 @@ function GitCommitStatus
 function SvnCommitStatus
 {
   status=""
-  local added
-  local untracked
-  local modified
-  local deleted
-  local renamed
-  local copied
-  local unmerged
-  local missing
-  local out_of_date
+  local added=""
+  local untracked=""
+  local modified=""
+  local deleted=""
+  local renamed=""
+  local copied=""
+  local unmerged=""
+  local missing=""
+  local out_of_date=""
   while read -r line; do
-    if [[ ${line} =~ ^A ]]; then
-      if [[ -z "${added}" ]]; then
-        added=1
-        status="$(MakeStatus "${status}" "${GIT_ADDED_COLOR}Added${RESET}")"
-      fi
-    elif [[ ${line} =~ ^\? ]]; then
-      if [[ -z "${untracked}" ]]; then
-        untracked=1
-        status="$(MakeStatus "${status}" "${GIT_UNTRACKED_COLOR}Untracked${RESET}")"
-      fi
-    elif [[ ${line} =~ ^M ]]; then
-      if [[ -z "${modified}" ]]; then
-        modified=1
-        status="$(MakeStatus "${status}" "${GIT_MODIFIED_COLOR}Modified${RESET}")"
-      fi
-    elif [[ ${line} =~ ^D ]]; then
-      if [[ -z "${deleted}" ]]; then
-        deleted=1
-        status="$(MakeStatus "${status}" "${GIT_DELETED_COLOR}Deleted${RESET}")"
-      fi
-    elif [[ ${line} =~ ^R ]]; then
-      if [[ -z "${renamed}" ]]; then
-        renamed=1
-        status="$(MakeStatus "${status}" "${GIT_RENAMED_COLOR}Renamed${RESET}")"
-      fi
-    elif [[ ${line} =~ ^C ]]; then
-      if [[ -z "${copied}" ]]; then
-        copied=1
-        status="$(MakeStatus "${status}" "${GIT_COPIED_COLOR}Copied${RESET}")"
-      fi
-    elif [[ ${line} =~ ^! ]]; then
-      if [[ -z "${missing}" ]]; then
-        missing=1
-        status="$(MakeStatus "${status}" "${GIT_UNMERGED_COLOR}Missing${RESET}")"
-      fi
-    else
-      status="UNKNOWN STATUS"
-      return 1
+    if [[ ${line} =~ ^A && -z "${added}" ]]; then
+      added=1
+      status="$(UpdateStatus "${status}" "${GIT_ADDED_COLOR}Added${RESET}")"
+    elif [[ ${line} =~ ^\? && -z "${untracked}" ]]; then
+      untracked=1
+      status="$(UpdateStatus "${status}" "${GIT_UNTRACKED_COLOR}Untracked${RESET}")"
+    elif [[ ( ${line} =~ ^M ) && ( -z "${modified}" ) ]]; then
+      modified=1
+      status="$(UpdateStatus "${status}" "${GIT_MODIFIED_COLOR}Modified${RESET}")"
+    elif [[ ${line} =~ ^D && -z "${deleted}" ]]; then
+      deleted=1
+      status="$(UpdateStatus "${status}" "${GIT_DELETED_COLOR}Deleted${RESET}")"
+    elif [[ ${line} =~ ^R && -z "${renamed}" ]]; then
+      renamed=1
+      status="$(UpdateStatus "${status}" "${GIT_RENAMED_COLOR}Renamed${RESET}")"
+    elif [[ ${line} =~ ^C && -z "${copied}" ]]; then
+      copied=1
+      status="$(UpdateStatus "${status}" "${GIT_COPIED_COLOR}Copied${RESET}")"
+    elif [[ ${line} =~ ^! && -z "${missing}" ]]; then
+      missing=1
+      status="$(UpdateStatus "${status}" "${GIT_UNMERGED_COLOR}Missing${RESET}")"
     fi
-  done <<< $( svn status )
+  done <<< $(svn status --non-interactive --ignore-externals)
   while read -r status_line; do
     if [[ ${status_line} =~ \* ]]; then
       if [[ -z "${out_of_date}" ]]; then
         out_of_date=1
-        status="$(MakeStatus "${status}" "${GIT_UNMERGED_COLOR}OutOfDate${RESET}")"
+        status="$(UpdateStatus "${status}" "${GIT_UNMERGED_COLOR}OutOfDate${RESET}")"
       fi
     fi
-  done <<< $( svn status -u | sed '$d' )
+  done <<<"$(svn status -u | sed '$d')"
   if [[ -n "${status}" ]]; then
     echo -en "${status}"
   fi
@@ -352,12 +319,10 @@ function GetStatus
 
     gs_gitstatus=$(GitCommitStatus)
 
-    if [ $? -eq 0 ]; then
-      if [ -z "$gs_gitstatus" ]; then
-        echo -e "$GIT_BRACKET_COLOR[$GIT_BRANCH_COLOR$gs_branch$GIT_BRACKET_COLOR]$RESET: ${GREEN}Up-to-date${RESET}"
-      else
-        echo -e "$GIT_BRACKET_COLOR[$GIT_BRANCH_COLOR$gs_branch$GIT_BRACKET_COLOR]$RESET: $gs_gitstatus"
-      fi
+    if [[ $? -eq 0 && -z "$gs_gitstatus" ]]; then
+      echo -e "$GIT_BRACKET_COLOR[$GIT_BRANCH_COLOR$gs_branch$GIT_BRACKET_COLOR]$RESET: ${GREEN}Up-to-date${RESET}"
+    else
+      echo -e "$GIT_BRACKET_COLOR[$GIT_BRANCH_COLOR$gs_branch$GIT_BRACKET_COLOR]$RESET: $gs_gitstatus"
     fi
   fi
 
