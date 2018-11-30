@@ -1,7 +1,9 @@
 #!/bin/bash
-# gitprompt.sh by Christer Enfors -- http://github.com/enfors/gitprompt
 
-GITPROMPT_VERSION="1.2.1"
+# gitprompt.sh by Christer Enfors -- http://github.com/enfors/gitprompt
+# svn support added by Craig Moore -- http://github.com/craigtmoore/gitprompt
+
+GITPROMPT_VERSION="2.0.0"
 RC_FILE=~/.gitpromptrc
 
 RED="\033[0;31m"
@@ -39,39 +41,39 @@ GIT_UNMERGED_COLOR=$MAGENTA
 
 function Init
 {
-    EchoGreeting
-    
-    if [ ! -e $RC_FILE ]; then
-	MkConfigFile
-	echo "It seems like this is your first time using GitPrompt."
-	echo "GitPrompt makes the prompt more informative, especially "
-	echo "(but not only) if you use git."
-    else
-	ReadConfigFile
-    fi
+  EchoGreeting
 
-    SetEditor
+  if [ ! -e $RC_FILE ]; then
+    MkConfigFile
+    echo "It seems like this is your first time using GitPrompt."
+    echo "GitPrompt makes the prompt more informative, especially "
+    echo "(but not only) if you use git."
+  else
+    ReadConfigFile
+  fi
+
+  SetEditor
 }
 
 function EchoGreeting
 {
-    echo "[GitPrompt version $GITPROMPT_VERSION by Christer Enfors enabled." \
-	 "Type 'GPHelp' for help.]"
+  echo "[GitPrompt version $GITPROMPT_VERSION by Christer Enfors enabled." \
+ "Type 'GPHelp' for help.]"
 }
 
 function SetEditor
 {
-    if [ -z "$EDITOR" ]; then
-	if [ -n "$VISUAL" ]; then
-	    EDITOR="$VISUAL"
-	else
-	    if [ $(which nano) ]; then
-		EDITOR="nano"
-	    else
-		EDITOR="vi"
-	    fi
-	fi
+  if [ -z "$EDITOR" ]; then
+    if [ -n "$VISUAL" ]; then
+      EDITOR="$VISUAL"
+    else
+      if [ $(which nano) ]; then
+        EDITOR="nano"
+      else
+        EDITOR="vi"
+      fi
     fi
+  fi
 }
 
 #
@@ -80,7 +82,7 @@ function SetEditor
 
 function GPHelp
 {
-    cat <<EOF
+  cat << EOF
 GitPrompt help
 ==============
 GitPrompt is a script which configures your prompt to be a little more
@@ -96,22 +98,22 @@ EOF
 
 function GPConfig
 {
-    $EDITOR $RC_FILE
+  $EDITOR $RC_FILE
 
-    if [ $? -ne 0 ]; then
-	echo "Editing config file failed; aborting." >&2
-	return 1
-    fi
-    
-    ReadConfigFile
-    SetPrompt
+  if [ $? -ne 0 ]; then
+    echo "Editing config file failed; aborting." >&2
+    return 1
+  fi
+
+  ReadConfigFile
+  SetPrompt
 }
 
 function GPReset
 {
-    MkConfigFile
-    ReadConfigFile
-    SetPrompt
+  MkConfigFile
+  ReadConfigFile
+  SetPrompt
 }
 
 #
@@ -120,16 +122,16 @@ function GPReset
 
 function MkConfigFile
 {
-    if [ -e "$RC_FILE" ]; then
-	echo -n "Do you want to reset your GitPrompt config? [y/N]: "
-	read answer
-	if [ "$answer" != "y" ]; then
-	    echo "Very well - it will be left as it is."
-	    return 0
-	fi  
+  if [ -e "$RC_FILE" ]; then
+    echo -n "Do you want to reset your GitPrompt config? [y/N]: "
+    read answer
+    if [ "$answer" != "y" ]; then
+      echo "Very well - it will be left as it is."
+      return 0
     fi
-    
-    cat <<EOF >$RC_FILE
+  fi
+
+  cat << EOF > $RC_FILE
 # This is the config file for GitPrompt.
 #
 # Color key:
@@ -173,130 +175,186 @@ EOF
 
 function ReadConfigFile
 {
-    . $RC_FILE
+  . $RC_FILE
 }
 
 # Display the exit status of the previous command, if non-zero.
 function ExitStatus
 {
-    gs_exitstatus=$?
+  gs_exitstatus=$?
 
-    if [ $gs_exitstatus -ne 0 ]; then
-	echo -en "${GIT_EXIT_STATUS_COLOR}Exit status: $gs_exitstatus $RESET"
-    fi
+  if [ $gs_exitstatus -ne 0 ]; then
+    echo -en "${GIT_EXIT_STATUS_COLOR}Exit status: $gs_exitstatus $RESET"
+  fi
 }
 
 function SetHostAlias
 {
-    if [ -n "$HOSTALIAS" ]; then
-	hostalias="$GIT_BRACKET_COLOR[$GIT_HOSTALIAS_COLOR$HOSTALIAS$GIT_BRACKET_COLOR]$RESET"
-    else
-	hostalias=""
-    fi
+  if [ -n "$HOSTALIAS" ]; then
+    hostalias="$GIT_BRACKET_COLOR[$GIT_HOSTALIAS_COLOR$HOSTALIAS$GIT_BRACKET_COLOR]$RESET"
+  else
+    hostalias=""
+  fi
 }
 
 function SetPrompt
 {
-    SetHostAlias
-    export PS1="\$(ExitStatus)$GIT_BRACKET_COLOR[$GIT_TIME_COLOR\$(date +%H:%M)$GIT_BRACKET_COLOR]$RESET $GIT_USERNAME_COLOR\u$GIT_AT_COLOR @ $GIT_HOSTNAME_COLOR\h$RESET$hostalias: $GIT_PWD_COLOR\w$RESET \$(GitStatus)\n\$ "    
+  SetHostAlias
+  export PS1="\n\$(ExitStatus)$GIT_TIME_COLOR\$(date +%H:%M)$RESET $GIT_USERNAME_COLOR\u$GIT_AT_COLOR@$GIT_HOSTNAME_COLOR\h$RESET$hostalias $GIT_PWD_COLOR\w$RESET \$(GetStatus)\n\$ "
 }
 
-# This is called before printing the each word in a list. The words should be
-# comma separated, so it prints a comma unless the word it's supposed to print
-# next is the FIRST word.
-function MaybeEchoComma
-{
-    if [ ! -z "$gs_first" ]; then
-	gs_first=
-    else
-	echo -n ", "
-    fi
+function UpdateStatus {
+  oldStatus="$1"
+  newStatus="$2"
+  if [[ -z "${oldStatus}" ]]; then
+    echo "${newStatus}"
+  else
+    echo "${oldStatus}, ${newStatus}"
+  fi
 }
 
 # Show the git commit status.
-function CommitStatus
+function GitCommitStatus
 {
-    unset added
-    git status -s --porcelain | while read -r line; do
-	if [[ $line == A* ]]; then
-	    if [ -z "$added" ]; then
-		added=1
-		MaybeEchoComma
-		echo -en "${GIT_ADDED_COLOR}Added${RESET}"
-	    fi
-	elif [[ $line == \?\?* ]]; then
-	    if [ -z "$untracked" ]; then
-		untracked=1
-		MaybeEchoComma
-		echo -en "${GIT_UNTRACKED_COLOR}Untracked${RESET}"
-	    fi
-	elif [[ $line == M* ]]; then
-	    if [ -z "$modified" ]; then
-		modified=1
-		MaybeEchoComma
-		echo -en "${GIT_MODIFIED_COLOR}Modified${RESET}"
-	    fi
-	elif [[ $line == D* ]]; then
-	    if [ -z "$deleted" ]; then
-		deleted=1
-		MaybeEchoComma
-		echo -en "${GIT_DELETED_COLOR}Deleted${RESET}"
-	    fi
-	elif [[ $line == R* ]]; then
-	    if [ -z "$renamed" ]; then
-		renamed=1
-		MaybeEchoComma
-		echo -en "${GIT_RENAMED_COLOR}Renamed${RESET}"
-	    fi
-	elif [[ $line == C* ]]; then
-	    if [ -z "$copied" ]; then
-		copied=1
-		echo -en ", ${GIT_COPIED_COLOR}Copied${RESET}"
-	    fi
-	elif [[ $line == U* ]]; then
-	    if [ -z "$unmerged" ]; then
-		copied=1
-		MaybeEchoComma
-		echo -en "${GIT_UNMERGED_COLOR}Updated-but-unmerged${RESET}"
-	    fi
-	else
-	    echo "UNKNOWN STATUS"
-	    return 1
-        fi
-    done
-
-    return 0
+  status=""
+  local added=""
+  local untracked=""
+  local modified=""
+  local deleted=""
+  local renamed=""
+  local copied=""
+  local unmerged=""
+  local missing=""
+  local unknown=""
+  while read -r line; do
+    if [[ ${line} == A* && -z "$added" ]]; then
+      added=1
+      status="$(UpdateStatus "${status}" "${GIT_ADDED_COLOR}Added${RESET}")"
+    elif [[ ${line} == \?\?* && -z "$untracked" ]]; then
+      untracked=1
+      status="$(UpdateStatus "${status}" "${GIT_UNTRACKED_COLOR}Untracked${RESET}")"
+    elif [[ ${line} == M* && -z "$modified" ]]; then
+      modified=1
+      status="$(UpdateStatus "${status}" "${GIT_MODIFIED_COLOR}Modified${RESET}")"
+    elif [[ ${line} == D* && -z "$deleted" ]]; then
+      deleted=1
+      status="$(UpdateStatus "${status}" "${GIT_DELETED_COLOR}Deleted${RESET}")"
+    elif [[ ${line} == R* && -z "$renamed" ]]; then
+      renamed=1
+      status="$(UpdateStatus "${status}" "${GIT_RENAMED_COLOR}Renamed${RESET}")"
+    elif [[ ${line} == C* && -z "$copied" ]]; then
+      copied=1
+      status="$(UpdateStatus "${status}" ", ${GIT_COPIED_COLOR}Copied${RESET}")"
+    elif [[ ${line} == U* && -z "$unmerged" ]]; then
+      copied=1
+      status="$(UpdateStatus "${status}" "${GIT_UNMERGED_COLOR}Updated-but-unmerged${RESET}")"
+    fi
+  done <<< $(git status -s --porcelain)
+  if [[ -n "${status}" ]]; then
+    echo -en "${status}"
+  fi
+  return 0
 }
 
-function GitStatus
+# Show the svn commit status.
+function SvnCommitStatus
 {
-
-    gs_first=1
-
-    # If we're inside a .git directory, we can't find the branch / commit status.
-    if pwd | grep -q /.git; then
-	return 0
+  status=""
+  local added=""
+  local untracked=""
+  local modified=""
+  local deleted=""
+  local renamed=""
+  local copied=""
+  local unmerged=""
+  local missing=""
+  local out_of_date=""
+  while read -r line; do
+    if [[ ${line} =~ ^A && -z "${added}" ]]; then
+      added=1
+      status="$(UpdateStatus "${status}" "${GIT_ADDED_COLOR}Added${RESET}")"
+    elif [[ ${line} =~ ^\? && -z "${untracked}" ]]; then
+      untracked=1
+      status="$(UpdateStatus "${status}" "${GIT_UNTRACKED_COLOR}Untracked${RESET}")"
+    elif [[ ( ${line} =~ ^M ) && ( -z "${modified}" ) ]]; then
+      modified=1
+      status="$(UpdateStatus "${status}" "${GIT_MODIFIED_COLOR}Modified${RESET}")"
+    elif [[ ${line} =~ ^D && -z "${deleted}" ]]; then
+      deleted=1
+      status="$(UpdateStatus "${status}" "${GIT_DELETED_COLOR}Deleted${RESET}")"
+    elif [[ ${line} =~ ^R && -z "${renamed}" ]]; then
+      renamed=1
+      status="$(UpdateStatus "${status}" "${GIT_RENAMED_COLOR}Renamed${RESET}")"
+    elif [[ ${line} =~ ^C && -z "${copied}" ]]; then
+      copied=1
+      status="$(UpdateStatus "${status}" "${GIT_COPIED_COLOR}Copied${RESET}")"
+    elif [[ ${line} =~ ^! && -z "${missing}" ]]; then
+      missing=1
+      status="$(UpdateStatus "${status}" "${GIT_UNMERGED_COLOR}Missing${RESET}")"
     fi
-
-    if git rev-parse --git-dir >/dev/null 2>&1; then
-	gs_branch=$(git branch | grep "^* " | cut -c 3-)
-
-	gs_gitstatus=$(CommitStatus)
-
-	if [ $? -eq 0 ]; then
-	    if [ -z "$gs_gitstatus" ]; then
-		echo -e "$GIT_BRACKET_COLOR[$GIT_BRANCH_COLOR$gs_branch$GIT_BRACKET_COLOR]$RESET: ${GREEN}Up-to-date${RESET}"
-	    else
-		echo -e "$GIT_BRACKET_COLOR[$GIT_BRANCH_COLOR$gs_branch$GIT_BRACKET_COLOR]$RESET: $gs_gitstatus"
-	    fi
-	fi
+  done <<< $(svn status --non-interactive --ignore-externals)
+  while read -r status_line; do
+    if [[ ${status_line} =~ \* ]]; then
+      if [[ -z "${out_of_date}" ]]; then
+        out_of_date=1
+        status="$(UpdateStatus "${status}" "${GIT_UNMERGED_COLOR}OutOfDate${RESET}")"
+      fi
     fi
+  done <<<"$(svn status -u | sed '$d')"
+  if [[ -n "${status}" ]]; then
+    echo -en "${status}"
+  fi
+  return 0
+}
+
+function GetStatus
+{
+  # If we're inside a .git directory, we can't find the branch / commit status.
+  if pwd | grep -q /.git; then
+    return 0
+  fi
+
+  if git rev-parse --git-dir > /dev/null 2>&1; then
+    gs_branch=$(git branch | grep "^* " | cut -c 3-)
+
+    gs_gitstatus=$(GitCommitStatus)
+
+    if [[ $? -eq 0 && -z "$gs_gitstatus" ]]; then
+      echo -e "$GIT_BRACKET_COLOR[$GIT_BRANCH_COLOR$gs_branch$GIT_BRACKET_COLOR]$RESET: ${GREEN}Up-to-date${RESET}"
+    else
+      echo -e "$GIT_BRACKET_COLOR[$GIT_BRANCH_COLOR$gs_branch$GIT_BRACKET_COLOR]$RESET: $gs_gitstatus"
+    fi
+  fi
+
+  if svn info > /dev/null 2>&1; then
+    local svn_url=$(svn info | grep ^URL | cut -c6-)
+    svn_branch=""
+    if [[ ${svn_url} =~ "branches" ]]; then
+      svn_branch=${svn_url##*branches/}
+      svn_branch=$(echo ${svn_branch} | sed -r 's;(.*)/.*;\1;;')
+    elif [[ ${svn_url} =~ "trunk" ]]; then
+      svn_branch="trunk"
+    elif [[ ${svn_url} =~ "tags" ]]; then
+      svn_branch=${svn_url##*tags/}
+      svn_branch="tags/$(echo ${svn_branch} | sed -r 's;(.*)/.*;\1;;')"
+    else
+      svn_branch="Unknown"
+    fi
+    local svn_status=$(SvnCommitStatus)
+    if [[ $? -eq 0 ]]; then
+      if [[ -z "${svn_status}" ]]; then
+        echo -e "$GIT_BRACKET_COLOR[$GIT_BRANCH_COLOR$svn_branch$GIT_BRACKET_COLOR]$RESET: ${GREEN}Up-to-date${RESET}"
+      else
+        echo -e "$GIT_BRACKET_COLOR[$GIT_BRANCH_COLOR$svn_branch$GIT_BRACKET_COLOR]$RESET: $svn_status"
+      fi
+    fi
+  fi
 }
 
 function Main
 {
-    Init
-    SetPrompt
+  Init
+  SetPrompt
 }
 
 Main
