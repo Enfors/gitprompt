@@ -57,7 +57,7 @@ the prompt.
 
 If you have a lot of different machines with less-than-helpful
 hostnames, which is sometimes the case, then you can set a shell
-variable called `HOSTALIAS`, to a more descriptive name, and it too
+variable called `HOSTALIAS` to a more descriptive name and it too
 will be displayed in the prompt.
 
 ### Customizing the colors
