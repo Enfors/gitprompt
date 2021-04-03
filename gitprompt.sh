@@ -1,7 +1,7 @@
 #!/bin/bash
 # gitprompt.sh by Christer Enfors -- http://github.com/enfors/gitprompt
 
-GITPROMPT_VERSION="1.2.1"
+GITPROMPT_VERSION="1.3.0"
 RC_FILE=~/.gitpromptrc
 
 RED="\033[0;31m"
@@ -39,13 +39,18 @@ GIT_UNMERGED_COLOR=$MAGENTA
 
 function Init
 {
-    EchoGreeting
+    # It turns out that echoing text before the prompt can sometimes
+    # cause problems, for example when you use scp to copy files from
+    # one machine to another. Therefore, we won't echo a greeting
+    # anymore.
+
+    # EchoGreeting
     
     if [ ! -e $RC_FILE ]; then
 	MkConfigFile
-	echo "It seems like this is your first time using GitPrompt."
-	echo "GitPrompt makes the prompt more informative, especially "
-	echo "(but not only) if you use git."
+	# echo "It seems like this is your first time using GitPrompt."
+	# echo "GitPrompt makes the prompt more informative, especially "
+	# echo "(but not only) if you use git."
     else
 	ReadConfigFile
     fi
