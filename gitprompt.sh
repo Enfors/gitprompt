@@ -55,6 +55,12 @@ function Init
 	ReadConfigFile
     fi
 
+    if ! grep -q "GIT_PROMPT_MODE" $RC_FILE; then
+        echo "GIT_PROMPT_MODE=1  "\
+             "# Valid values are 1, 2 and 3. "\
+             "Affects prompt formatting." >>$RC_FILE
+    fi
+
     SetEditor
 }
 
@@ -173,6 +179,8 @@ GIT_DELETED_COLOR=\$RED
 GIT_RENAMED_COLOR=\$MAGENTA
 GIT_COPIED_COLOR=\$MAGENTA
 GIT_UNMERGED_COLOR=\$MAGENTA
+
+GIT_PROMPT_MODE=1  # Valid values are 1, 2 and 3. Affects prompt formatting.
 EOF
 }
 
@@ -203,7 +211,17 @@ function SetHostAlias
 function SetPrompt
 {
     SetHostAlias
-    export PS1="\$(ExitStatus)$GIT_BRACKET_COLOR[$GIT_TIME_COLOR\$(date +%H:%M)$GIT_BRACKET_COLOR]$RESET $GIT_USERNAME_COLOR\u$GIT_AT_COLOR @ $GIT_HOSTNAME_COLOR\h$RESET$hostalias: $GIT_PWD_COLOR\w$RESET \$(GitStatus)\n\$ "    
+    case $GIT_PROMPT_MODE in
+        2)
+            export PS1="\$(ExitStatus)$GIT_BRACKET_COLOR[$GIT_TIME_COLOR\$(date +%H:%M)$GIT_BRACKET_COLOR]$RESET $GIT_USERNAME_COLOR\u$GIT_AT_COLOR @ $GIT_HOSTNAME_COLOR\h$RESET$hostalias: $GIT_PWD_COLOR\w$RESET\n\$(GitStatus)\$ "
+            ;;
+        3)
+            export PS1="\$(ExitStatus)$GIT_BRACKET_COLOR[$GIT_TIME_COLOR\$(date +%H:%M)$GIT_BRACKET_COLOR]$RESET $GIT_USERNAME_COLOR\u$GIT_AT_COLOR @ $GIT_HOSTNAME_COLOR\h$RESET$hostalias: \$(GitStatus)\n$GIT_PWD_COLOR\w$RESET\$ "
+            ;;
+        *)
+            export PS1="\$(ExitStatus)$GIT_BRACKET_COLOR[$GIT_TIME_COLOR\$(date +%H:%M)$GIT_BRACKET_COLOR]$RESET $GIT_USERNAME_COLOR\u$GIT_AT_COLOR @ $GIT_HOSTNAME_COLOR\h$RESET$hostalias: $GIT_PWD_COLOR\w$RESET \$(GitStatus)\n\$ "
+            ;;
+    esac
 }
 
 # This is called before printing the each word in a list. The words should be
@@ -290,9 +308,9 @@ function GitStatus
 
 	if [ $? -eq 0 ]; then
 	    if [ -z "$gs_gitstatus" ]; then
-		echo -e "$GIT_BRACKET_COLOR[$GIT_BRANCH_COLOR$gs_branch$GIT_BRACKET_COLOR]$RESET: ${GREEN}Up-to-date${RESET}"
+		echo -e "$GIT_BRACKET_COLOR[$GIT_BRANCH_COLOR$gs_branch$GIT_BRACKET_COLOR]$RESET: ${GREEN}Up-to-date${RESET} "
 	    else
-		echo -e "$GIT_BRACKET_COLOR[$GIT_BRANCH_COLOR$gs_branch$GIT_BRACKET_COLOR]$RESET: $gs_gitstatus"
+		echo -e "$GIT_BRACKET_COLOR[$GIT_BRANCH_COLOR$gs_branch$GIT_BRACKET_COLOR]$RESET: $gs_gitstatus "
 	    fi
 	fi
     fi
